@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Public Showcase</title>
+</head>
+<body>
+   <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Public Showcase</title>
+    <link rel="stylesheet" href="styles/styles.css">
+</head>
+
+    <h1>Public Showcase 👷‍♂️</h1>
+
+
+              <nav class="navbar">
+  <ul class="nav-list">
+    <li><a href="/views/HouseList.html" class="active">House List</a></li>
+    <li><a href="/views/HouseBuilder.html">House Builder</a></li>
+    <li><a href="/views/showcase.html">Public Showcase</a></li>
+  </ul>
+</nav> 
+
+    <div id="showcaseContainer" class="showcase-list"></div>
+
+    <script type="module">
+        const container = document.getElementById("showcaseContainer");
+
+        async function loadShowcase() {
+            const res = await fetch("/api/showcase"); //That request goes to your backend ShowcaseController 
+            const posts = await res.json();
+            container.innerHTML = "";
+
+            posts.forEach(post => {
+                const card = document.createElement("div");
+                card.classList.add("showcase-card");
+
+                card.innerHTML = `
+                    <h3>${post.title}</h3>
+                    <p>Company: ${post.companyName}</p>
+                    <p>Floor Area: ${post.floorAreaSqm} sqm</p>
+                    <p>Total Cost: $${post.totalCost.toLocaleString()}</p>
+                    <button class="delete-btn">Delete</button>
+                `;
+
+                card.querySelector(".delete-btn").addEventListener("click", async () => {
+                    await fetch(`/api/showcase/${post.id}`, { method: "DELETE" }); //sends request to backend again
+                    loadShowcase();
+                });
+
+                container.appendChild(card);
+            });
+        }
+
+        loadShowcase();
+    </script>
+</body>
+</html>
