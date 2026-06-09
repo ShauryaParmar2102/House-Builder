@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Public Showcase</title>
+  <link rel="stylesheet" href="styles/styles.css" />
+</head>
+
+<body>
+
+  <h1>Public Showcase 👷‍♂️</h1>
+
+  <nav class="navbar">
+    <ul class="nav-list">
+      <li><a href="/views/HouseList.html">House List</a></li>
+      <li><a href="/views/showcase.html" class="active">Public Showcase</a></li>
+    </ul>
+  </nav>
+
+  <!-- Controls -->
+  <div class="controls">
+    <input type="text" id="showcaseSearch" placeholder="Search showcase..." />
+
+    <select id="ShowcaseSortBy">
+      <option value="default">Sort: Default</option>
+      <option value="costAsc">Cost: Low → High</option>
+      <option value="costDesc">Cost: High → Low</option>
+      <option value="titleAsc">Title: A → Z</option>
+      <option value="titleDesc">Title: Z → A</option>
+    </select>
+  </div>
+
+  <div id="showcaseContainer" class="showcase-list"></div>
+
+  <script type="module"> //This JS runs in the browser.
+
+  // Grab HTML elements from the page
+    const container = document.getElementById("showcaseContainer");
+    const sortSelect = document.getElementById("ShowcaseSortBy");
+    const searchInput = document.getElementById("showcaseSearch");
+
+    let posts = [];
+
+    async function loadShowcase() {
+      try {
+    // Sends request to backend API endpoint
+        const res = await fetch("/api/showcase"); // Connects to backend route (/api/showcase) which calls ShowcaseController in order to return showcase data
+
+        // Convert response into usable JSON
+        posts = await res.json();
+        // Display data on page
+        render();
+      } catch (err) {
+        console.error("Failed to load showcase:", err);
+      }
+    }
+
+    function render() {
+        // copy data so we don't destroy original
+      let data = [...posts];
+
+        // SEARCH FILTER (frontend filtering)
+      const search = searchInput.value.toLowerCase().trim();
+      if (search) {
+        data = data.filter(p =>
+          p.title.toLowerCase().includes(search) ||
+          p.companyName.toLowerCase().includes(search)
+        );
+      }
+
+      // Sort by Logic
+      switch (sortSelect.value) {
+        case "costAsc":
+          data.sort((a, b) => a.totalCost - b.totalCost);
+          break;
+        case "costDesc":
+          data.sort((a, b) => b.totalCost - a.totalCost);
+          break;
+        case "titleAsc":
+          data.sort((a, b) => a.title.localeCompare(b.title));
+          break;
+        case "titleDesc":
+          data.sort((a, b) => b.title.localeCompare(a.title));
+          break;
+      }
+
+      // RENDER
+      container.innerHTML = "";
+
+      // Build new cards
+      data.forEach(post => {
+        const card = document.createElement("div");
+        card.className = "showcase-card";
+
+        card.innerHTML = `
+          <h3>${post.title}</h3>
+          <p><b>Company:</b> ${post.companyName}</p>
+          <p><b>Storeys:</b> ${post.storeyCount}</p>
+          <p><b>Rooms:</b> ${post.rooms}</p>
+          <p><b>Bathrooms:</b> ${post.bathrooms}</p>
+          <p><b>Garages:</b> ${post.garages}</p>
+          <p><b>Floor Area:</b> ${post.floorAreaSqm} sqm</p>
+          <p><b>Facade:</b> ${post.facade}</p>
+          <p><b>Extras:</b> ${(post.extras || []).join(", ")}</p>
+          <p><b>Total Cost:</b> $${post.totalCost.toLocaleString()}</p>
+          <button class="delete-btn">Delete</button>
+        `;
+
+        card.querySelector(".delete-btn").addEventListener("click", async () => {
+          await fetch(`/api/showcase/${post.id}`, { method: "DELETE" });
+
+          // reload data after delete
+          loadShowcase();
+        });
+
+        container.appendChild(card);
+      });
+    }
+
+    // events - When user changes sort or search, re-render
+    sortSelect.addEventListener("change", render);
+    searchInput.addEventListener("input", render);
+
+    //initial load
+    loadShowcase();
+  </script>
+
+</body>
+</html>
